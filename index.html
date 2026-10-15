@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nexus Multi-Agent Arena | Gemini, Claude, ChatGPT, DeepSeek, Grok & Meta AI</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            gemini: { DEFAULT: '#8B5CF6', light: '#A78BFA', dark: '#6D28D9' },
+            claude: { DEFAULT: '#D97706', light: '#F59E0B', dark: '#B45309' },
+            chatgpt: { DEFAULT: '#10B981', light: '#34D399', dark: '#059669' },
+            deepseek: { DEFAULT: '#0EA5E9', light: '#38BDF8', dark: '#0284C7' },
+            grok: { DEFAULT: '#F43F5E', light: '#FB7185', dark: '#E11D48' },
+            meta: { DEFAULT: '#2563EB', light: '#60A5FA', dark: '#1D4ED8' },
+            surface: { 800: '#1e2230', 900: '#111420', 950: '#090b12' }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Marked.js (Markdown parser) & Highlight.js (Code highlighting) -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+
+  <!-- Custom Styles -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="bg-surface-950 text-slate-100 min-h-screen flex flex-col font-sans antialiased overflow-hidden">
+
+  <!-- Header -->
+  <header class="h-16 border-b border-slate-800 bg-surface-900/80 backdrop-blur-md px-6 flex items-center justify-between z-20">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-purple-500/20">
+        <i data-lucide="network" class="w-5 h-5 text-white"></i>
+      </div>
+      <div>
+        <h1 class="font-bold text-lg leading-tight bg-gradient-to-r from-purple-400 via-pink-300 to-cyan-300 bg-clip-text text-transparent">
+          Nexus Multi-Agent Arena
+        </h1>
+        <p class="text-xs text-slate-400">Gemini • Claude • ChatGPT • DeepSeek • Grok • Meta AI</p>
+      </div>
+    </div>
+
+    <!-- Active Agents Indicator Pills -->
+    <div class="hidden lg:flex items-center gap-2">
+      <span class="text-xs text-slate-400 mr-1">Activos:</span>
+      <div id="agent-pill-gemini" class="agent-pill border-gemini text-gemini-light bg-gemini/10">
+        <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Gemini
+      </div>
+      <div id="agent-pill-claude" class="agent-pill border-claude text-claude-light bg-claude/10">
+        <i data-lucide="brain" class="w-3.5 h-3.5"></i> Claude
+      </div>
+      <div id="agent-pill-chatgpt" class="agent-pill border-chatgpt text-chatgpt-light bg-chatgpt/10">
+        <i data-lucide="cpu" class="w-3.5 h-3.5"></i> ChatGPT
+      </div>
+      <div id="agent-pill-deepseek" class="agent-pill border-deepseek text-deepseek-light bg-deepseek/10">
+        <i data-lucide="compass" class="w-3.5 h-3.5"></i> DeepSeek
+      </div>
+      <div id="agent-pill-grok" class="agent-pill border-grok text-grok-light bg-grok/10">
+        <i data-lucide="zap" class="w-3.5 h-3.5"></i> Grok
+      </div>
+      <div id="agent-pill-meta" class="agent-pill border-meta text-meta-light bg-meta/10">
+        <i data-lucide="infinity" class="w-3.5 h-3.5"></i> Meta AI
+      </div>
+    </div>
+
+    <!-- Right Controls -->
+    <div class="flex items-center gap-2">
+      <button id="btn-export" title="Exportar conversación" class="header-btn">
+        <i data-lucide="download" class="w-4 h-4"></i>
+        <span class="hidden sm:inline text-xs">Exportar</span>
+      </button>
+      <button id="btn-clear" title="Limpiar conversación" class="header-btn text-rose-400 hover:text-rose-300 hover:bg-rose-950/40">
+        <i data-lucide="trash-2" class="w-4 h-4"></i>
+      </button>
+      <button id="btn-settings-toggle" class="header-btn bg-purple-600/20 text-purple-300 border border-purple-500/40 hover:bg-purple-600/30">
+        <i data-lucide="settings-2" class="w-4 h-4"></i>
+        <span class="text-xs font-medium">Configurar Claves & Roles</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <div class="flex-1 flex overflow-hidden relative">
+
+    <!-- Left Sidebar: Modes & Discussion Setup -->
+    <aside id="sidebar" class="w-80 border-r border-slate-800 bg-surface-900/60 p-4 flex flex-col gap-5 overflow-y-auto z-10">
+      
+      <!-- Mode Selection -->
+      <div>
+        <label class="section-label">Modo de Interacción</label>
+        <div class="grid grid-cols-1 gap-2">
+          <button class="mode-card active" data-mode="round_robin">
+            <div class="flex items-center gap-2.5">
+              <i data-lucide="users" class="w-4 h-4 text-purple-400"></i>
+              <span class="font-semibold text-sm">Mesa Redonda Colaborativa</span>
+            </div>
+            <p class="text-xs text-slate-400 mt-1">Los agentes debaten en turnos sucesivos, complementando y criticando sus respuestas.</p>
+          </button>
+
+          <button class="mode-card" data-mode="debate">
+            <div class="flex items-center gap-2.5">
+              <i data-lucide="swords" class="w-4 h-4 text-amber-400"></i>
+              <span class="font-semibold text-sm">Debate Dialéctico (2 Agentes)</span>
+            </div>
+            <p class="text-xs text-slate-400 mt-1">Dos agentes confrontan visiones opuestas o alternativas de solución.</p>
+          </button>
+
+          <button class="mode-card" data-mode="step_by_step">
+            <div class="flex items-center gap-2.5">
+              <i data-lucide="hand-metal" class="w-4 h-4 text-cyan-400"></i>
+              <span class="font-semibold text-sm">Paso a Paso (Manual)</span>
+            </div>
+            <p class="text-xs text-slate-400 mt-1">Tú eliges con un clic qué agente habla a continuación y a quién le responde.</p>
+          </button>
+
+          <button class="mode-card" data-mode="direct">
+            <div class="flex items-center gap-2.5">
+              <i data-lucide="message-square" class="w-4 h-4 text-emerald-400"></i>
+              <span class="font-semibold text-sm">Chat Directo 1-a-1</span>
+            </div>
+            <p class="text-xs text-slate-400 mt-1">Habla individualmente con el agente que prefieras.</p>
+          </button>
+        </div>
+      </div>
+
+      <!-- Agent Selection Toggles -->
+      <div>
+        <div class="flex items-center justify-between mb-2">
+          <label class="section-label mb-0">Agentes Participantes</label>
+          <span class="text-[11px] text-slate-500">Activa/desactiva</span>
+        </div>
+        <div class="space-y-2" id="agents-checkbox-list">
+          
+          <!-- Gemini -->
+          <label class="agent-toggle-item border-l-4 border-gemini" data-agent="gemini">
+            <input type="checkbox" checked class="rounded bg-slate-800 border-slate-700 text-purple-600 focus:ring-0">
+            <div class="flex-1">
+              <div class="flex items-center justify-between">
+                <span class="font-medium text-sm text-gemini-light flex items-center gap-1.5">
+                  <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Gemini
+                </span>
+                <span class="key-badge" id="key-badge-gemini">Sin Clave</span>
+              </div>
+              <p class="text-[11px] text-slate-400 truncate">Creativo & Visión Estratégica</p>
+            </div>
+          </label>
+
+          <!-- Claude -->
+          <label class="agent-toggle-item border-l-4 border-claude" data-agent="claude">
+            <input type="checkbox" checked class="rounded bg-slate-800 border-slate-700 text-amber-600 focus:ring-0">
+            <div class="flex-1">
+              <div class="flex items-center justify-between">
+                <span class="font-medium text-sm text-claude-light flex items-center gap-1.5">
+                  <i data-lucide="brain" class="w-3.5 h-3.5"></i> Claude
+                </span>
+                <span class="key-badge" id="key-badge-claude">Sin Clave</span>
+              </div>
+              <p class="text-[11px] text-slate-400 truncate">Análisis Crítico & Arquitectura</p>
+            </div>
+          </label>
+
+          <!-- ChatGPT -->
+          <label class="agent-toggle-item border-l-4 border-chatgpt" data-agent="chatgpt">
+            <input type="checkbox" checked class="rounded bg-slate-800 border-slate-700 text-emerald-600 focus:ring-0">
+            <div class="flex-1">
+              <div class="flex items-center justify-between">
+                <span class="font-medium text-sm text-chatgpt-light flex items-center gap-1.5">
+                  <i data-lucide="cpu" class="w-3.5 h-3.5"></i> ChatGPT
+                </span>
+                <span class="key-badge" id="key-badge-chatgpt">Sin Clave</span>
+              </div>
+              <p class="text-[11px] text-slate-400 truncate">Solución Práctica & Síntesis</p>
+            </div>
+          </label>
+
+          <!-- DeepSeek -->
+          <label class="agent-toggle-item border-l-4 border-deepseek" data-agent="deepseek">
+            <input type="checkbox" checked class="rounded bg-slate-800 border-slate-700 text-sky-600 focus:ring-0">
+            <div class="flex-1">
+              <div class="flex items-center justify-between">
+                <span class="font-medium text-sm text-deepseek-light flex items-center gap-1.5">
+                  <i data-lucide="compass" class="w-3.5 h-3.5"></i> DeepSeek
+                </span>
+                <span class="key-badge" id="key-badge-deepseek">Sin Clave</span>
+              </div>
+              <p class="text-[11px] text-slate-400 truncate">Lógica Profunda & Algoritmos</p>
+            </div>
+          </label>
+
+          <!-- Grok -->
+          <label class="agent-toggle-item border-l-4 border-grok" data-agent="grok">
+            <input type="checkbox" checked class="rounded bg-slate-800 border-slate-700 text-rose-600 focus:ring-0">
+            <div class="flex-1">
+              <div class="flex items-center justify-between">
+                <span class="font-medium text-sm text-grok-light flex items-center gap-1.5">
+                  <i data-lucide="zap" class="w-3.5 h-3.5"></i> Grok (xAI)
+                </span>
+                <span class="key-badge" id="key-badge-grok">Sin Clave</span>
+              </div>
+              <p class="text-[11px] text-slate-400 truncate">Audacia & Pensamiento Disruptivo</p>
+            </div>
+          </label>
+
+          <!-- Meta AI -->
+          <label class="agent-toggle-item border-l-4 border-meta" data-agent="meta">
+            <input type="checkbox" checked class="rounded bg-slate-800 border-slate-700 text-blue-600 focus:ring-0">
+            <div class="flex-1">
+              <div class="flex items-center justify-between">
+                <span class="font-medium text-sm text-meta-light flex items-center gap-1.5">
+                  <i data-lucide="infinity" class="w-3.5 h-3.5"></i> Meta AI (Llama)
+                </span>
+                <span class="key-badge" id="key-badge-meta">Sin Clave</span>
+              </div>
+              <p class="text-[11px] text-slate-400 truncate">Código Abierto & Sentido Común</p>
+            </div>
+          </label>
+
+        </div>
+      </div>
+
+      <!-- Autopilot settings for Round-Robin -->
+      <div id="autopilot-settings" class="bg-surface-800/50 p-3 rounded-xl border border-slate-800/80">
+        <label class="section-label flex items-center justify-between">
+          <span>Rondas automáticas:</span>
+          <span id="rounds-value" class="text-purple-400 font-bold">1 ronda</span>
+        </label>
+        <input id="rounds-slider" type="range" min="1" max="4" value="1" class="w-full accent-purple-500">
+        <p class="text-[11px] text-slate-400 mt-1">Cada ronda permite que cada agente activo responda una vez consecutivamente.</p>
+      </div>
+
+      <!-- Quick Prompt Starters -->
+      <div>
+        <label class="section-label">Ideas Rápidas de Discusión</label>
+        <div class="space-y-1.5">
+          <button class="quick-starter-btn" data-prompt="Diseñen la arquitectura de software completa para una aplicación moderna de alta concurrencia. Claude enfócate en seguridad y modularidad, DeepSeek en optimización y algoritmos, Gemini en innovación de producto, Grok en cuestionar puntos ciegos o complejidades innecesarias, Meta AI en estándares abiertos y ChatGPT en el plan de implementación.">
+            🏗️ Arquitectura de Software
+          </button>
+          <button class="quick-starter-btn" data-prompt="Debatan sobre la adopción de Microservicios vs Monolito Modular para una startup que está escalando rápidamente. Grok y DeepSeek cuestionen los dogmas comunes, Claude y ChatGPT propongan directrices arquitectónicas, Gemini y Meta analicen costos y futuro.">
+            ⚔️ Microservicios vs Monolito
+          </button>
+          <button class="quick-starter-btn" data-prompt="Propongan una estrategia técnica para implementar agentes de Inteligencia Artificial locales y en la nube de forma híbrida. Meta AI comparte sobre modelos abiertos locales, Grok y DeepSeek sobre rendimiento y cómputo, Claude y ChatGPT sobre privacidad y orquestación.">
+            💡 Estrategia de IA Híbrida
+          </button>
+          <button class="quick-starter-btn" data-prompt="Escriban y refinen un algoritmo de búsqueda y caché distribuido en Python. Gemini sugiere la estructura general, DeepSeek optimiza la complejidad temporal, Claude audita posibles fallas o condiciones de carrera, Grok cuestiona casos extremos y ChatGPT consolida el código final con tests.">
+            ⚡ Algoritmo & Auditoría de Código
+          </button>
+        </div>
+      </div>
+
+    </aside>
+
+    <!-- Center: Main Chat Arena -->
+    <main class="flex-1 flex flex-col bg-surface-950 overflow-hidden relative">
+      
+      <!-- Conversation Message Stream -->
+      <div id="messages-container" class="flex-1 overflow-y-auto px-4 md:px-8 py-6 space-y-6">
+        
+        <!-- Welcome Banner if empty -->
+        <div id="welcome-banner" class="max-w-2xl mx-auto my-12 text-center p-8 rounded-2xl border border-slate-800/80 bg-gradient-to-b from-surface-900/80 to-surface-950 shadow-2xl">
+          <div class="inline-flex p-4 rounded-2xl bg-purple-500/10 border border-purple-500/20 text-purple-400 mb-4">
+            <i data-lucide="bot" class="w-10 h-10"></i>
+          </div>
+          <h2 class="text-2xl font-bold text-white mb-2">Bienvenido a la Mesa Redonda de Agentes</h2>
+          <p class="text-slate-400 text-sm leading-relaxed mb-6">
+            Escribe una consigna, problema o pregunta. Los agentes de 
+            <span class="text-gemini font-semibold">Gemini</span>, 
+            <span class="text-claude font-semibold">Claude</span>, 
+            <span class="text-chatgpt font-semibold">ChatGPT</span>, 
+            <span class="text-deepseek font-semibold">DeepSeek</span>, 
+            <span class="text-grok font-semibold">Grok</span> y 
+            <span class="text-meta font-semibold">Meta AI</span> 
+            interactuarán entre sí para enriquecer, debatir y sintetizar la mejor solución posible.
+          </p>
+          <div class="flex flex-wrap justify-center gap-3">
+            <button onclick="document.getElementById('btn-settings-toggle').click()" class="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-xs font-semibold flex items-center gap-2 shadow-lg shadow-purple-600/20 transition">
+              <i data-lucide="key" class="w-4 h-4"></i> Ingresar Claves API
+            </button>
+            <button onclick="document.querySelector('.quick-starter-btn').click()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-semibold flex items-center gap-2 transition">
+              <i data-lucide="play" class="w-4 h-4"></i> Probar con un ejemplo
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Action Bar (Status & Next Agent Picker for Step-by-Step) -->
+      <div id="step-by-step-bar" class="hidden border-t border-slate-800/80 bg-surface-900/70 px-6 py-2.5 flex items-center justify-between text-xs">
+        <span class="text-slate-400 font-medium">¿Quién responde a continuación?</span>
+        <div class="flex flex-wrap items-center gap-2" id="step-agent-buttons">
+          <button class="step-btn border-gemini text-gemini-light hover:bg-gemini/20" data-agent="gemini">
+            <i data-lucide="sparkles" class="w-3 h-3"></i> Gemini
+          </button>
+          <button class="step-btn border-claude text-claude-light hover:bg-claude/20" data-agent="claude">
+            <i data-lucide="brain" class="w-3 h-3"></i> Claude
+          </button>
+          <button class="step-btn border-chatgpt text-chatgpt-light hover:bg-chatgpt/20" data-agent="chatgpt">
+            <i data-lucide="cpu" class="w-3 h-3"></i> ChatGPT
+          </button>
+          <button class="step-btn border-deepseek text-deepseek-light hover:bg-deepseek/20" data-agent="deepseek">
+            <i data-lucide="compass" class="w-3 h-3"></i> DeepSeek
+          </button>
+          <button class="step-btn border-grok text-grok-light hover:bg-grok/20" data-agent="grok">
+            <i data-lucide="zap" class="w-3 h-3"></i> Grok
+          </button>
+          <button class="step-btn border-meta text-meta-light hover:bg-meta/20" data-agent="meta">
+            <i data-lucide="infinity" class="w-3 h-3"></i> Meta AI
+          </button>
+        </div>
+      </div>
+
+      <!-- Live Generating Status Toast / Progress -->
+      <div id="active-agent-status" class="hidden px-6 py-2 bg-surface-900/90 border-t border-slate-800/80 flex items-center justify-between text-xs">
+        <div class="flex items-center gap-2.5">
+          <div class="flex space-x-1">
+            <div class="w-2 h-2 bg-purple-400 rounded-full animate-bounce"></div>
+            <div class="w-2 h-2 bg-amber-400 rounded-full animate-bounce [animation-delay:0.2s]"></div>
+            <div class="w-2 h-2 bg-emerald-400 rounded-full animate-bounce [animation-delay:0.4s]"></div>
+            <div class="w-2 h-2 bg-rose-400 rounded-full animate-bounce [animation-delay:0.6s]"></div>
+            <div class="w-2 h-2 bg-blue-400 rounded-full animate-bounce [animation-delay:0.8s]"></div>
+          </div>
+          <span id="active-status-text" class="text-slate-300 font-medium">Turno de un agente interactuando...</span>
+        </div>
+        <button id="btn-stop" class="px-2.5 py-1 rounded bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 font-medium border border-rose-500/30 flex items-center gap-1.5">
+          <i data-lucide="square" class="w-3 h-3 fill-current"></i> Detener
+        </button>
+      </div>
+
+      <!-- Chat Input Area -->
+      <div class="p-4 border-t border-slate-800 bg-surface-900/80 backdrop-blur-md">
+        <form id="chat-form" class="max-w-4xl mx-auto relative flex flex-col gap-2">
+          
+          <div class="relative flex items-end bg-surface-950/80 border border-slate-700/80 focus-within:border-purple-500 rounded-2xl shadow-inner transition p-2">
+            <textarea
+              id="user-input"
+              rows="2"
+              placeholder="Escribe tu mensaje, tema o pregunta para que los agentes debatan y colaboren..."
+              class="w-full bg-transparent text-sm text-slate-100 placeholder-slate-500 focus:outline-none resize-none px-3 py-1.5 max-h-36 overflow-y-auto"
+            ></textarea>
+
+            <button
+              type="submit"
+              id="btn-send"
+              class="ml-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-semibold text-xs flex items-center gap-2 shadow-lg shadow-purple-600/30 transition disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+            >
+              <span>Enviar a la Mesa</span>
+              <i data-lucide="send" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+
+          <div class="flex items-center justify-between text-[11px] text-slate-500 px-2">
+            <span>Presiona <kbd class="px-1 py-0.5 bg-slate-800 rounded text-slate-300">Enter</kbd> para enviar o <kbd class="px-1 py-0.5 bg-slate-800 rounded text-slate-300">Shift + Enter</kbd> para salto de línea</span>
+            <span id="turn-counter">Listo</span>
+          </div>
+
+        </form>
+      </div>
+
+    </main>
+
+  </div>
+
+  <!-- Settings & API Key Drawer (Modal/Flyout) -->
+  <div id="settings-drawer" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex justify-end transition-opacity">
+    <div class="w-full max-w-lg bg-surface-900 border-l border-slate-800 h-full overflow-y-auto p-6 flex flex-col gap-6 shadow-2xl">
+      
+      <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+        <div class="flex items-center gap-2.5">
+          <i data-lucide="key-round" class="w-5 h-5 text-purple-400"></i>
+          <h2 class="font-bold text-lg text-white">Configuración de Agentes</h2>
+        </div>
+        <button id="btn-close-settings" class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Information Callout -->
+      <div class="p-3.5 rounded-xl bg-purple-950/40 border border-purple-800/40 text-xs text-purple-200 leading-relaxed">
+        <i data-lucide="shield-check" class="w-4 h-4 text-purple-400 inline mr-1"></i>
+        Las claves se almacenan localmente en tu navegador o en el archivo <code class="bg-black/40 px-1 py-0.5 rounded text-purple-300">.env</code> de tu máquina.
+      </div>
+
+      <!-- API Keys Section -->
+      <div class="space-y-4">
+        <h3 class="text-xs uppercase font-bold tracking-wider text-slate-400">Claves de API</h3>
+
+        <!-- Gemini API Key -->
+        <div class="space-y-1.5">
+          <label class="flex items-center justify-between text-xs font-semibold text-gemini-light">
+            <span class="flex items-center gap-1.5"><i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Google Gemini API Key</span>
+            <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-[11px] text-purple-400 hover:underline">Obtener clave gratis ↗</a>
+          </label>
+          <div class="relative">
+            <input type="password" id="input-key-gemini" placeholder="AIzaSy..." class="key-input pr-10">
+            <button type="button" class="toggle-password absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-200">
+              <i data-lucide="eye" class="w-4 h-4"></i>
+            </button>
+          </div>
+          <div class="flex items-center justify-between text-[11px] text-slate-500">
+            <span>Modelo:</span>
+            <input type="text" id="model-gemini" value="gemini-1.5-flash" class="bg-surface-950 border border-slate-800 rounded px-2 py-0.5 text-slate-300 text-[11px] w-44">
+          </div>
+        </div>
+
+        <!-- Claude API Key -->
+        <div class="space-y-1.5">
+          <label class="flex items-center justify-between text-xs font-semibold text-claude-light">
+            <span class="flex items-center gap-1.5"><i data-lucide="brain" class="w-3.5 h-3.5"></i> Anthropic Claude API Key</span>
+            <a href="https://console.anthropic.com/settings/keys" target="_blank" class="text-[11px] text-amber-400 hover:underline">Obtener clave ↗</a>
+          </label>
+          <div class="relative">
+            <input type="password" id="input-key-claude" placeholder="sk-ant-api03-..." class="key-input pr-10">
+            <button type="button" class="toggle-password absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-200">
+              <i data-lucide="eye" class="w-4 h-4"></i>
+            </button>
+          </div>
+          <div class="flex items-center justify-between text-[11px] text-slate-500">
+            <span>Modelo:</span>
+            <input type="text" id="model-claude" value="claude-3-5-sonnet-20241022" class="bg-surface-950 border border-slate-800 rounded px-2 py-0.5 text-slate-300 text-[11px] w-48">
+          </div>
+        </div>
+
+        <!-- ChatGPT API Key -->
+        <div class="space-y-1.5">
+          <label class="flex items-center justify-between text-xs font-semibold text-chatgpt-light">
+            <span class="flex items-center gap-1.5"><i data-lucide="cpu" class="w-3.5 h-3.5"></i> OpenAI ChatGPT API Key</span>
+            <a href="https://platform.openai.com/api-keys" target="_blank" class="text-[11px] text-emerald-400 hover:underline">Obtener clave ↗</a>
+          </label>
+          <div class="relative">
+            <input type="password" id="input-key-chatgpt" placeholder="sk-proj-..." class="key-input pr-10">
+            <button type="button" class="toggle-password absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-200">
+              <i data-lucide="eye" class="w-4 h-4"></i>
+            </button>
+          </div>
+          <div class="flex items-center justify-between text-[11px] text-slate-500">
+            <span>Modelo:</span>
+            <input type="text" id="model-chatgpt" value="gpt-4o" class="bg-surface-950 border border-slate-800 rounded px-2 py-0.5 text-slate-300 text-[11px] w-44">
+          </div>
+        </div>
+
+        <!-- DeepSeek API Key -->
+        <div class="space-y-1.5">
+          <label class="flex items-center justify-between text-xs font-semibold text-deepseek-light">
+            <span class="flex items-center gap-1.5"><i data-lucide="compass" class="w-3.5 h-3.5"></i> DeepSeek API Key</span>
+            <a href="https://platform.deepseek.com/api_keys" target="_blank" class="text-[11px] text-sky-400 hover:underline">Obtener clave ↗</a>
+          </label>
+          <div class="relative">
+            <input type="password" id="input-key-deepseek" placeholder="sk-..." class="key-input pr-10">
+            <button type="button" class="toggle-password absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-200">
+              <i data-lucide="eye" class="w-4 h-4"></i>
+            </button>
+          </div>
+          <div class="flex items-center justify-between text-[11px] text-slate-500">
+            <span>Modelo:</span>
+            <input type="text" id="model-deepseek" value="deepseek-chat" class="bg-surface-950 border border-slate-800 rounded px-2 py-0.5 text-slate-300 text-[11px] w-44">
+          </div>
+        </div>
+
+        <!-- Grok API Key (xAI) -->
+        <div class="space-y-1.5">
+          <label class="flex items-center justify-between text-xs font-semibold text-grok-light">
+            <span class="flex items-center gap-1.5"><i data-lucide="zap" class="w-3.5 h-3.5"></i> Grok API Key (xAI)</span>
+            <a href="https://console.x.ai/" target="_blank" class="text-[11px] text-rose-400 hover:underline">Consola xAI ↗</a>
+          </label>
+          <div class="relative">
+            <input type="password" id="input-key-grok" placeholder="xai-..." class="key-input pr-10">
+            <button type="button" class="toggle-password absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-200">
+              <i data-lucide="eye" class="w-4 h-4"></i>
+            </button>
+          </div>
+          <div class="flex items-center justify-between text-[11px] text-slate-500">
+            <span>Modelo:</span>
+            <input type="text" id="model-grok" value="grok-beta" class="bg-surface-950 border border-slate-800 rounded px-2 py-0.5 text-slate-300 text-[11px] w-44">
+          </div>
+        </div>
+
+        <!-- Meta AI API Key (Groq / OpenRouter / Together) -->
+        <div class="space-y-1.5">
+          <label class="flex items-center justify-between text-xs font-semibold text-meta-light">
+            <span class="flex items-center gap-1.5"><i data-lucide="infinity" class="w-3.5 h-3.5"></i> Meta AI / Groq / Llama Key</span>
+            <a href="https://console.groq.com/keys" target="_blank" class="text-[11px] text-blue-400 hover:underline">Obtener en Groq gratis ↗</a>
+          </label>
+          <div class="relative">
+            <input type="password" id="input-key-meta" placeholder="gsk_... o sk-or-..." class="key-input pr-10">
+            <button type="button" class="toggle-password absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-200">
+              <i data-lucide="eye" class="w-4 h-4"></i>
+            </button>
+          </div>
+          <div class="flex items-center justify-between text-[11px] text-slate-500">
+            <span>Modelo:</span>
+            <input type="text" id="model-meta" value="llama-3.3-70b-versatile" class="bg-surface-950 border border-slate-800 rounded px-2 py-0.5 text-slate-300 text-[11px] w-48">
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Custom System Prompts / Roles Accordion -->
+      <div class="space-y-3">
+        <h3 class="text-xs uppercase font-bold tracking-wider text-slate-400">Personalización de Roles & System Prompts</h3>
+        
+        <details class="group bg-surface-950/60 rounded-xl border border-slate-800/80 p-3">
+          <summary class="cursor-pointer text-xs font-semibold text-gemini-light flex items-center justify-between">
+            <span>Rol de Gemini</span>
+            <i data-lucide="chevron-down" class="w-3.5 h-3.5 group-open:rotate-180 transition"></i>
+          </summary>
+          <textarea id="role-gemini" rows="3" class="w-full mt-2 bg-surface-900 border border-slate-700 rounded-lg p-2 text-xs text-slate-200"></textarea>
+        </details>
+
+        <details class="group bg-surface-950/60 rounded-xl border border-slate-800/80 p-3">
+          <summary class="cursor-pointer text-xs font-semibold text-claude-light flex items-center justify-between">
+            <span>Rol de Claude</span>
+            <i data-lucide="chevron-down" class="w-3.5 h-3.5 group-open:rotate-180 transition"></i>
+          </summary>
+          <textarea id="role-claude" rows="3" class="w-full mt-2 bg-surface-900 border border-slate-700 rounded-lg p-2 text-xs text-slate-200"></textarea>
+        </details>
+
+        <details class="group bg-surface-950/60 rounded-xl border border-slate-800/80 p-3">
+          <summary class="cursor-pointer text-xs font-semibold text-chatgpt-light flex items-center justify-between">
+            <span>Rol de ChatGPT</span>
+            <i data-lucide="chevron-down" class="w-3.5 h-3.5 group-open:rotate-180 transition"></i>
+          </summary>
+          <textarea id="role-chatgpt" rows="3" class="w-full mt-2 bg-surface-900 border border-slate-700 rounded-lg p-2 text-xs text-slate-200"></textarea>
+        </details>
+
+        <details class="group bg-surface-950/60 rounded-xl border border-slate-800/80 p-3">
+          <summary class="cursor-pointer text-xs font-semibold text-deepseek-light flex items-center justify-between">
+            <span>Rol de DeepSeek</span>
+            <i data-lucide="chevron-down" class="w-3.5 h-3.5 group-open:rotate-180 transition"></i>
+          </summary>
+          <textarea id="role-deepseek" rows="3" class="w-full mt-2 bg-surface-900 border border-slate-700 rounded-lg p-2 text-xs text-slate-200"></textarea>
+        </details>
+
+        <details class="group bg-surface-950/60 rounded-xl border border-slate-800/80 p-3">
+          <summary class="cursor-pointer text-xs font-semibold text-grok-light flex items-center justify-between">
+            <span>Rol de Grok (xAI)</span>
+            <i data-lucide="chevron-down" class="w-3.5 h-3.5 group-open:rotate-180 transition"></i>
+          </summary>
+          <textarea id="role-grok" rows="3" class="w-full mt-2 bg-surface-900 border border-slate-700 rounded-lg p-2 text-xs text-slate-200"></textarea>
+        </details>
+
+        <details class="group bg-surface-950/60 rounded-xl border border-slate-800/80 p-3">
+          <summary class="cursor-pointer text-xs font-semibold text-meta-light flex items-center justify-between">
+            <span>Rol de Meta AI (Llama)</span>
+            <i data-lucide="chevron-down" class="w-3.5 h-3.5 group-open:rotate-180 transition"></i>
+          </summary>
+          <textarea id="role-meta" rows="3" class="w-full mt-2 bg-surface-900 border border-slate-700 rounded-lg p-2 text-xs text-slate-200"></textarea>
+        </details>
+      </div>
+
+      <!-- Temperature Settings -->
+      <div class="space-y-1.5">
+        <label class="flex items-center justify-between text-xs font-semibold text-slate-300">
+          <span>Temperatura (Creatividad vs Precisión):</span>
+          <span id="temp-display" class="text-purple-400 font-bold">0.7</span>
+        </label>
+        <input id="temp-slider" type="range" min="0" max="1" step="0.1" value="0.7" class="w-full accent-purple-500">
+      </div>
+
+      <!-- Save Button -->
+      <div class="pt-4 border-t border-slate-800 mt-auto flex gap-3">
+        <button id="btn-save-settings" class="flex-1 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-semibold text-xs flex items-center justify-center gap-2 shadow-lg shadow-purple-600/30 transition">
+          <i data-lucide="check" class="w-4 h-4"></i> Guardar Configuración
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Application Logic -->
+  <script src="js/app.js"></script>
+</body>
+</html>
